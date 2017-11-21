@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Sliding Puzzle</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+        <!-- Style Sheet -->
+        <link rel="stylesheet" href="style.css">
+
+    </head>
+    <body>
+        <div id="content" class="container-fluid">
+            <div class="container center-block mediaMonkWrapp">
+                <div class="mediaMonkTexts">
+                    <h1 id="monkTitle" class="animated bounceInDown">Sliding Puzzle</h1>
+                    <h2 id="wonMessage" class="animated zoomIn">You won!</h2>
+                </div>
+                <div class="animated bounceInUp">
+                    <a id="startGame" class="btn btn-default">Start Game!</a>
+                    <a id="resetGame" class="btn btn-default">Reset</a>  
+                </div>
+                  
+            </div>
+            
+            <div id="game" class="container center-block animated slideInLeft">        
+                <div id="allGameWrapp">
+                    <div class="row">
+                        <div class="puzzle piece0 pos-1-1"></div>
+                        <div class="puzzle piece1 pos-1-2"></div>
+                        <div class="puzzle piece2 pos-1-3"></div>
+                    </div>
+                    <div class="row">
+                        <div class="puzzle piece3 pos-2-1"></div>
+                        <div class="puzzle piece4 pos-2-2"></div>
+                        <div class="puzzle piece5 pos-2-3"></div> 
+                    </div>
+                    <div class="row">              
+                        <div class="puzzle piece6 pos-3-1"></div>
+                        <div class="puzzle piece7 pos-3-2"></div>
+                        <div class="puzzle piece8 pos-3-3"></div> 
+                        <div class="black pieceBlack pos-3-3"></div> 
+                    </div>
+                </div>
+            </div> 
+            
+        </div>
+        <footer>
+            <p>Coded by <a href="https://github.com/kenyaguzmanp" target="_blank">Kenya Guzman</a>
+        </footer>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script>
+            $(document).ready(function () {
+                console.log("ready!");
+                var pieceBlack = $(".pieceBlack");
+                var pieceBlackClassPos = pieceBlack[0].classList[2];
+                var pieceBlackVectorPos = pieceBlackClassPos.slice(4).split('');
+                var availableCells = [];
+                var availableCellsGeneral = [];
+                var availableCellGeneral = {
+                    "cell": '',
+                    "moves": ''
+                };
+                var gameWinFlag= false;
+                
+                $("#resetGame").prop("disabled",true);
+                $("#wonMessage").css("display", "none");
+                
+                $("#startGame").on("click", function(){
+                    console.log("starting game...");
+                    $(this).prop("disabled",true);
+                    $("#resetGame").prop("disabled",false);
+                    $("#wonMessage").css("display", "none");
+                    $("#game").removeClass("animated shake");
+                    gameWinFlag = false;
+                    $(".puzzle").css("border-style", "solid");
+                    $(".pieceBlack").css("background-image", "none");
+                    resetPositions();
+                    resetGame();
+                    
+                    randomizeCells();
+                    otherTurn();
+                    initGame();
+                });
+                
+                $("#resetGame").on("click", function(){
+                    console.log("reseting game...");
+                    
+                    $(".puzzle").css("border-style", "solid");
+                    $(".pieceBlack").css("background-image", "none");
+                    $("#game").removeClass("animated shake");
+                    resetPositions();
+                    resetGame();                   
+                    randomizeCells();                   
+                    otherTurn();
+                    initGame();
+                });
+                
+                
+                
+                function resetPositions(){
+                    console.log("en reset positions");
+                    var vect =["0px","0px","166px","332px"];
+                    
+                    $(".puzzle").removeClass("availableCell");
+                    $(".black").removeClass($(".black")[0].classList[2]);
+                    
+                    for(var i=0; i<9; i++){
+                        $(".piece"+i).removeClass($(".piece"+i)[0].classList[2]);
+                        $(".piece"+i).removeAttr( 'style' );
+                    }
+                    $(".black").removeAttr( 'style' );
+                    $(".black").removeClass("pos-3-3");
+                    
+                   for(var i=1; i<=3; i++){
+                        for(var j=1; j<=3; j++){
+                            $(".pos-" + i + "-" + j).css({      
+                                'top' : vect[i],
+                                'left' : vect[j]
+                            });
+                        }
+                    }
+                }
+                             
+                function resetGame(){
+                    console.log("reseting game");
+                    gameWinFlag = false;
+                   
+                    $("#game").removeClass(".animated .shake");
+                    
+                    $(".piece0").addClass("pos-1-1");
+                    $(".piece1").addClass("pos-1-2");
+                    $(".piece2").addClass("pos-1-3");
+                    $(".piece3").addClass("pos-2-1");
+                    $(".piece4").addClass("pos-2-2");
+                    $(".piece5").addClass("pos-2-3");
+                    $(".piece6").addClass("pos-3-1");
+                    $(".piece7").addClass("pos-3-2");
+                    $(".piece8").addClass("pos-3-3");
+                    
+                    for(var i=0; i< 9; i++){
+                        $(".piece"+i).removeClass("pos-3-3");
+                        $(".piece"+i).removeClass("won");
+                    }
+                    $(".pieceBlack").addClass("pos-3-3");
+                    $(".pieceBlack").css("background-image", "none");
+                    $(".puzzle").css("border-style", "solid");
+                }
+                
+                function initGame(){
+                    availableCells = availableCellsToMove(pieceBlackVectorPos);
+                    addClassAvailable(availableCells);
+                    constructAvailableCellObject(availableCells);
+                }
+                
+
+                $(".puzzle").on("click", function () {
+                    var cellSeleted = $(this);
+                    $(".puzzle, .black").removeAttr( 'style' );
+                        $(".puzzle").css("border-style", "solid");
+                        $(".pieceBlack").css("background-image", "none");
+                    if (cellSeleted.hasClass("availableCell") && !gameWinFlag) {
+                        var cellSelectedClassPiece = cellSeleted[0].classList[1];
+                        moveCellToBlack(cellSelectedClassPiece);
+                        otherTurn();
+                        gameOver();
+                    } else {
+                        console.log("not available to move");
+                    }
+                                     
+                });
+                
+                function gameOver(){ 
+                    var piecei = [];
+                    var posPiecei = [];
+                    var winIndex=0;
+                    var order = ['pos-1-1', 'pos-1-2', 'pos-1-3', 'pos-2-1', 'pos-2-2', 'pos-2-3', 'pos-3-1', 'pos-3-2', 'pos-3-3'];
+                    for(var i=0; i<9; i++){
+                        piecei[i] = $(".piece" + i)[0].classList[1];
+                        posPiecei[i] = $(".piece" + i)[0].classList[2];                       
+                    }                   
+                    for(var j=0; j<posPiecei.length; j++){
+                        if(posPiecei[j]===order[j]){
+                            winIndex++;
+                        }
+                    }
+                    if(winIndex=== order.length){
+                        console.log("win!");
+                        $(".puzzle").addClass("won");
+                        $(".pieceBlack").css("background-image", "url(monks.jpg)");
+                        $("#resetGame").prop("disabled",true);
+                        $("#startGame").prop("disabled",false);
+                        
+                        gameWinFlag = true;
+                        $(".puzzle").removeClass("won");
+                        $(".puzzle, .black").removeAttr( 'style' );
+                        winAction(gameWinFlag);
+                    }
+                }
+                
+                function winAction(flag){
+                    if(flag){
+                        resetPositions();
+                        $("#wonMessage").css("display", "block");                       
+                        $("#game").removeClass("animated slideInLeft").addClass("animated shake");
+                    }
+                }
+                
+                function otherTurn(){
+                    console.log("OTHER TURN");
+                    pieceBlackClassPos = $(".pieceBlack")[0].classList[2];
+                    pieceBlackVectorPos = pieceBlackClassPos.slice(4).split('');
+                    availableCells = [];
+                    availableCellsGeneral = [];
+                    availableCellGeneral = {
+                        "cell": '',
+                     "moves": ''
+                     };
+                     for(var i=0; i<9; i++){
+                         $(".piece" + i).removeClass("availableCell");
+                     }
+                    availableCells = availableCellsToMove(pieceBlackVectorPos);
+                    addClassAvailable(availableCells);
+                    constructAvailableCellObject(availableCells);
+                }
+                
+                function moveCellToBlack(piece){
+                    console.log("Move cell to Black");
+                    var pieceBlackOffset = $(".pieceBlack").position(); 
+                    var piecePosition = $("."+piece)[0].classList[2];
+                    var pieceOffset = $("."+piece).position(); 
+                    for(var i=0; i<availableCells.length; i++){
+                        if(availableCellsGeneral[i].cell=== piecePosition && availableCellsGeneral[i].moves === "right"){
+                            var r = pieceOffset.left + 166;
+                            var rB =pieceBlackOffset.left - 166;
+                            $("."+availableCellsGeneral[i].cell).animate({left: r +"px"});
+                            $(".pieceBlack").animate({left: rB +"px"});
+                        }
+                        if(availableCellsGeneral[i].cell=== piecePosition && availableCellsGeneral[i].moves === "left"){
+                            var r = pieceOffset.left - 166;
+                            var rB =pieceBlackOffset.left + 166;
+                            $("."+availableCellsGeneral[i].cell).animate({left: r +"px"});
+                            $(".pieceBlack").animate({left: rB +"px"});
+                        }
+                        if(availableCellsGeneral[i].cell=== piecePosition && availableCellsGeneral[i].moves === "down"){
+                            var t = pieceOffset.top +166;
+                            var tB =pieceBlackOffset.top - 166;
+                            $("."+availableCellsGeneral[i].cell).animate({top: t +"px"});
+                            $(".pieceBlack").animate({top: tB +"px"});
+                        }
+                        if(availableCellsGeneral[i].cell=== piecePosition && availableCellsGeneral[i].moves === "up"){
+                            var t = pieceOffset.top - 166;
+                            var tB =pieceBlackOffset.top + 166;
+                            $("."+availableCellsGeneral[i].cell).animate({top: t +"px"});
+                            $(".pieceBlack").animate({top: tB +"px"});
+                        }
+                        
+                    }
+                    
+                    $(".puzzle, .black").removeAttr( 'style' );
+                    $(".puzzle").css("border-style", "solid");
+                    $(".pieceBlack").css("background-image", "none");
+                    
+                    var pieceBlackPos = $(".pieceBlack")[0].classList[2];
+                    var piecePos = $("."+piece)[0].classList[2];
+                    $(".pieceBlack").removeClass(pieceBlackPos).addClass(piecePos);
+                    $("."+piece).removeClass(piecePos).addClass(pieceBlackPos); 
+                }
+                
+                
+                function constructAvailableCellObject(cellsArray){
+                    for(var i=0; i< cellsArray.length; i++){
+                        availableMovements(cellsArray[i]);
+                    }
+                }
+
+                function availableMovements(cell){
+                    var cellPosition = cell.slice(4).split('');
+                    availableCellGeneral = {
+                        "cell": '',
+                        "moves": ''
+                    };
+                    var posRow = parseInt(pieceBlackVectorPos[0]);
+                    var posCol = parseInt(pieceBlackVectorPos[2]);
+                    
+                    var posRowCell = parseInt(cellPosition[0]);
+                    var posColCell = parseInt(cellPosition[2]);
+                    
+                    availableCellGeneral.cell = cell;              
+                    
+                    if(posRow - posRowCell > 0){
+                        availableCellGeneral.moves = 'down';
+                    }
+                    if(posRowCell - posRow > 0){
+                        availableCellGeneral.moves = 'up';
+                    }
+                    if(posCol - posColCell >0){
+                        availableCellGeneral.moves = 'right';
+                    }
+                    if(posColCell - posCol >0){
+                        availableCellGeneral.moves = 'left';
+                    }
+                    
+                    availableCellsGeneral.push(availableCellGeneral);
+                }
+
+
+                function randomizeCells() {
+                    var reorderCells = [0, 1, 2, 3, 4, 5, 6, 7];
+                    var matrixOrder = ['pos-1-1', 'pos-1-2', 'pos-1-3', 'pos-2-1', 'pos-2-2', 'pos-2-3', 'pos-3-1', 'pos-3-2'];
+                    var newMatrixOrder = [];
+                    //For random positions of cells:
+                    //shuffle(reorderCells);
+                    //For tests (no random positions)
+                    var reorderCells = [0, 1, 2, 3, 4, 5, 6, 7];
+                    for (var i = 0; i < reorderCells.length; i++) {
+                        newMatrixOrder[i] = matrixOrder[reorderCells[i]];
+                    }
+                    reorderCells.push(8);
+                    newMatrixOrder.push('pos-3-3');
+
+                    for (var j = 0; j < newMatrixOrder.length; j++) {
+                        var lastClass = $(".piece" + j)[0].classList[2];
+                        $(".piece" + j).removeClass(lastClass);
+                        $(".piece" + j).addClass(newMatrixOrder[j]);
+                    }
+
+                }
+
+
+                function shuffle(array) {
+                    var i = array.length;
+                    var j = 0;
+                    var temp;
+                    while (i--) {
+                        j = Math.floor(Math.random() * (i + 1));
+                        // swap randomly chosen element with current element
+                        temp = array[i];
+                        array[i] = array[j];
+                        array[j] = temp;
+                    }
+                    return array;
+                }
+
+
+                function addClassAvailable(cells) {
+                    for (var i = 0; i < cells.length; i++) {
+                        $("." + cells[i]).addClass("availableCell");
+                    }
+                }
+
+
+
+                function availableCellsToMove(pieceBlackVectorPos) {
+                    var posRow = parseInt(pieceBlackVectorPos[0]);
+                    var posCol = parseInt(pieceBlackVectorPos[2]);
+                    var up = posRow - 1;
+                    var down = posRow + 1;
+                    var right = posCol + 1;
+                    var left = posCol - 1;
+                    var available = [];
+                    if (up > 0) {
+                        available.push("pos-" + up + "-" + posCol);
+                    }
+                    if (down < 4) {
+                        available.push("pos-" + down + "-" + posCol);
+                    }
+                    if (right < 4) {
+                        available.push("pos-" + posRow + "-" + right);
+                    }
+                    if (left > 0) {
+                        available.push("pos-" + posRow + "-" + left);
+                    }
+                    return available;
+                }
+
+            });
+        </script>
+    </body>
+</html>
